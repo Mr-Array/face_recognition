@@ -1,4 +1,3 @@
-# import the necessary packages
 from imutils.video import VideoStream
 from imutils.video import FPS
 import face_recognition
@@ -7,6 +6,7 @@ import pickle
 import time
 import cv2
 from gtts import gTTS
+import pygame
 import os
 
 # Initialize 'currentname' to trigger only when a new person is identified.
@@ -17,12 +17,25 @@ encodingsP = "encodings.pickle"
 # Load the known faces and embeddings
 print("[INFO] loading encodings + face detector...")
 data = pickle.loads(open(encodingsP, "rb").read())
+
+# Initialize pygame mixer
+pygame.mixer.init()
+
+# Function to play the text-to-speech audio
+def play_audio(text):
+    tts = gTTS(text=text, lang='en')
+    tts.save('output.mp3')
+    pygame.mixer.music.load('output.mp3')
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        time.sleep(0.1)
+    pygame.mixer.music.unload()  # Unload the current music
+    time.sleep(0.1)  # Add a small delay to ensure the file is released
+    os.remove('output.mp3')
+
 # Convert the phrase "Face recognition is ready" to speech and play it
-tts = gTTS(text="Face recognition is ready", lang='en')
-tts = gTTS(text=currentname, lang='en')
-tts.save('output.mp3')
-os.system("mpg321 audio.mp3")
-os.remove("output.mp3")
+play_audio("Face recognition is ready")
+
 # Initialize the video stream and allow the camera sensor to warm up
 vs = VideoStream(src=0, framerate=10).start()
 time.sleep(2.0)
@@ -65,10 +78,7 @@ while True:
             # If someone in your dataset is identified, print their name on the screen
             if currentname != name:
                 currentname = name
-                tts = gTTS(text=currentname, lang='en')
-                tts.save('output.mp3')
-                os.system("mpg321 audio.mp3")
-                os.remove("output.mp3")
+                play_audio(currentname)
                 print(currentname)
 
         # Update the list of names
@@ -85,8 +95,8 @@ while True:
     cv2.imshow("Facial Recognition is Running", frame)
     key = cv2.waitKey(1) & 0xFF
 
-    # Quit when  ESC pressed key is pressed
-    if key%256 == 27:
+    # Quit when ESC pressed key is pressed
+    if key % 256 == 27:
         break
 
     # Update the FPS counter
